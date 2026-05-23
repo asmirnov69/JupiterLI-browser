@@ -16,6 +16,12 @@ class Series(BaseModel):
     key: str
 
 
+class SeriesPoints(BaseModel):
+    series_id: str
+    ts: list[float]
+    value: list[float]
+
+
 @app.get("/api/health")
 def health() -> dict:
     get_client().query("SELECT 1")
@@ -37,3 +43,14 @@ def list_series(run_id: str) -> list[Series]:
         parameters={"run_id": run_id},
     )
     return [Series(series_id=row[0], key=row[1]) for row in result.result_rows]
+
+
+@app.get("/api/series/{series_id}/points", response_model=SeriesPoints)
+def series_points(series_id: str) -> SeriesPoints:
+    result = get_client().query(
+        "SELECT timestamp, value FROM series WHERE series_id = %(series_id)s ORDER BY timestamp",
+        parameters={"series_id": series_id},
+    )
+    ts = [row[0] for row in result.result_rows]
+    value = [row[1] for row in result.result_rows]
+    return SeriesPoints(series_id=series_id, ts=ts, value=value)

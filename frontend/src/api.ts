@@ -8,6 +8,12 @@ export interface Series {
   key: string
 }
 
+export interface SeriesPoints {
+  series_id: string
+  ts: number[]
+  value: number[]
+}
+
 async function getJson<T>(url: string): Promise<T> {
   const res = await fetch(url)
   if (!res.ok) {
@@ -20,3 +26,6 @@ export const listRuns = () => getJson<Run[]>('/api/runs')
 
 export const listSeries = (runId: string) =>
   getJson<Series[]>(`/api/runs/${encodeURIComponent(runId)}/series`)
+
+export const getSeriesPoints = (seriesId: string) =>
+  getJson<SeriesPoints>(`/api/series/${encodeURIComponent(seriesId)}/points`)
