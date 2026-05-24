@@ -16,6 +16,8 @@ const POLL_INTERVAL_MS = 2000
 const INACTIVE_FALLBACK_MS = 3000
 
 type XAxisKind = 'time' | 'serial'
+type ViewMode = 'plot' | 'hist' | 'plot+hist'
+const VIEW_MODES: ViewMode[] = ['plot', 'hist', 'plot+hist']
 
 interface Buffer {
   xAxis: XAxisKind | null
@@ -33,6 +35,7 @@ function inferXAxis(sampleTimestamp: number): XAxisKind {
 export default function SeriesPlot({ series }: Props) {
   const [buf, setBuf] = useState<Buffer>(emptyBuffer)
   const [error, setError] = useState<string | null>(null)
+  const [mode, setMode] = useState<ViewMode>('plot')
 
   const cursorRef = useRef<{
     lastStreamId: string | null
@@ -153,45 +156,84 @@ export default function SeriesPlot({ series }: Props) {
   }, [series.series_id])
 
   const ready = buf.xAxis !== null && buf.values.length > 0
+  const showScatter = mode === 'plot' || mode === 'plot+hist'
+  const showHist = mode === 'hist' || mode === 'plot+hist'
+
+  const scatter = (
+    <Plot
+      data={[
+        {
+          type: 'scatter',
+          mode: 'lines+markers',
+          x:
+            buf.xAxis === 'time'
+              ? buf.timestamps.map((t) => new Date(t * 1000))
+              : buf.serials,
+          y: buf.values,
+          marker: { size: 5 },
+          name: series.key,
+        },
+      ]}
+      layout={{
+        autosize: true,
+        uirevision: `${series.series_id}-plot`,
+        margin: { l: 50, r: 20, t: 10, b: 40 },
+        xaxis:
+          buf.xAxis === 'time'
+            ? { title: { text: 'timestamp' }, type: 'date' }
+            : { title: { text: 'run_serial_num' }, type: 'linear' },
+        yaxis: { title: { text: 'value' } },
+      }}
+      config={{ displaylogo: false, responsive: true }}
+      style={{ width: '100%', height: '100%' }}
+      useResizeHandler
+    />
+  )
+
+  const histogram = (
+    <Plot
+      data={[
+        {
+          type: 'histogram',
+          x: buf.values,
+          name: series.key,
+        },
+      ]}
+      layout={{
+        autosize: true,
+        uirevision: `${series.series_id}-hist`,
+        margin: { l: 50, r: 20, t: 10, b: 40 },
+        xaxis: { title: { text: 'value' } },
+        yaxis: { title: { text: 'count' } },
+        bargap: 0.05,
+      }}
+      config={{ displaylogo: false, responsive: true }}
+      style={{ width: '100%', height: '100%' }}
+      useResizeHandler
+    />
+  )
 
   return (
     <div className="plot-card">
       <div className="plot-header">
         <span className="series-key">{series.key}</span>
         <span className="series-id" title={series.series_id}>{series.series_id}</span>
+        <select
+          className="view-mode-select"
+          value={mode}
+          onChange={(e) => setMode(e.target.value as ViewMode)}
+        >
+          {VIEW_MODES.map((m) => (
+            <option key={m} value={m}>{m}</option>
+          ))}
+        </select>
       </div>
       {error && <div className="status status-error">{error}</div>}
       {!error && !ready && <div className="status">Loading…</div>}
       {!error && ready && (
-        <div className="plot-wrapper">
-          <Plot
-            data={[
-              {
-                type: 'scatter',
-                mode: 'lines+markers',
-                x:
-                  buf.xAxis === 'time'
-                    ? buf.timestamps.map((t) => new Date(t * 1000))
-                    : buf.serials,
-                y: buf.values,
-                marker: { size: 5 },
-                name: series.key,
-              },
-            ]}
-            layout={{
-              autosize: true,
-              uirevision: series.series_id,
-              margin: { l: 50, r: 20, t: 10, b: 40 },
-              xaxis:
-                buf.xAxis === 'time'
-                  ? { title: { text: 'timestamp' }, type: 'date' }
-                  : { title: { text: 'run_serial_num' }, type: 'linear' },
-              yaxis: { title: { text: 'value' } },
-            }}
-            config={{ displaylogo: false, responsive: true }}
-            style={{ width: '100%', height: '100%' }}
-            useResizeHandler
-          />
+        <div className="plot-content">
+          {showScatter && <div className="plot-wrapper">{scatter}</div>}
+          {showHist && <div className="plot-wrapper">{histogram}</div>}
         </div>
       )}
     </div>
