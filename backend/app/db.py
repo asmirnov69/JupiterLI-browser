@@ -1,4 +1,5 @@
 import clickhouse_connect
+import redis
 from clickhouse_connect.driver.client import Client
 
 from .config import settings
@@ -11,4 +12,13 @@ def get_client() -> Client:
         database=settings.clickhouse_database,
         username=settings.clickhouse_user,
         password=settings.clickhouse_password,
+    )
+
+
+def get_redis() -> redis.Redis:
+    return redis.Redis(
+        host=settings.redis_host,
+        port=settings.redis_port,
+        db=settings.redis_db,
+        decode_responses=True,
     )

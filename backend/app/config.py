@@ -10,5 +10,10 @@ class Settings(BaseSettings):
     clickhouse_user: str = "default"
     clickhouse_password: str = ""
 
+    redis_host: str = "localhost"
+    redis_port: int = 6379
+    redis_db: int = 0
+    redis_telemetry_key: str = "telemetry"
+
 
 settings = Settings()

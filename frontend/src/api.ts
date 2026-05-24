@@ -8,11 +8,26 @@ export interface Series {
   key: string
 }
 
-export interface SeriesPoints {
-  series_id: string
-  x_axis: 'time' | 'serial'
-  x: number[]
-  y: number[]
+export interface StreamLatestId {
+  latest_id: string
+}
+
+export interface LivePoint {
+  stream_id: string
+  run_serial_num: number
+  timestamp: number
+  value: number
+}
+
+export interface SeriesLive {
+  next_after_id: string
+  entries: LivePoint[]
+}
+
+export interface SeriesHistory {
+  timestamps: number[]
+  values: number[]
+  serials: number[]
 }
 
 async function getJson<T>(url: string): Promise<T> {
@@ -28,5 +43,17 @@ export const listRuns = () => getJson<Run[]>('/api/runs')
 export const listSeries = (runId: string) =>
   getJson<Series[]>(`/api/runs/${encodeURIComponent(runId)}/series`)
 
-export const getSeriesPoints = (seriesId: string) =>
-  getJson<SeriesPoints>(`/api/series/${encodeURIComponent(seriesId)}/points`)
+export const getStreamLatestId = () => getJson<StreamLatestId>('/api/stream/latest_id')
+
+export const getSeriesLive = (seriesId: string, afterId: string) =>
+  getJson<SeriesLive>(
+    `/api/series/${encodeURIComponent(seriesId)}/live?after_id=${encodeURIComponent(afterId)}`,
+  )
+
+export const getSeriesHistory = (seriesId: string, maxSerial: number | null) => {
+  const url =
+    maxSerial == null
+      ? `/api/series/${encodeURIComponent(seriesId)}/history`
+      : `/api/series/${encodeURIComponent(seriesId)}/history?max_serial=${maxSerial}`
+  return getJson<SeriesHistory>(url)
+}

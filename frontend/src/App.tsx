@@ -14,9 +14,30 @@ export default function App() {
   const [loadingSeries, setLoadingSeries] = useState<Set<string>>(new Set())
 
   useEffect(() => {
-    listRuns()
-      .then(setRuns)
-      .catch((err: Error) => setRunsError(err.message))
+    let cancelled = false
+    const fetchRuns = () => {
+      listRuns()
+        .then((next) => {
+          if (cancelled) return
+          setRuns((prev) => {
+            if (prev && prev.length === next.length &&
+                prev.every((r, i) => r.run_id === next[i].run_id && r.run_label === next[i].run_label)) {
+              return prev
+            }
+            return next
+          })
+          setRunsError(null)
+        })
+        .catch((err: Error) => {
+          if (!cancelled) setRunsError(err.message)
+        })
+    }
+    fetchRuns()
+    const handle = setInterval(fetchRuns, 2000)
+    return () => {
+      cancelled = true
+      clearInterval(handle)
+    }
   }, [])
 
   const ensureSeriesLoaded = useCallback(
