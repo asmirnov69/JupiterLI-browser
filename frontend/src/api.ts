@@ -10,8 +10,9 @@ export interface Series {
 
 export interface SeriesPoints {
   series_id: string
-  ts: number[]
-  value: number[]
+  x_axis: 'time' | 'serial'
+  x: number[]
+  y: number[]
 }
 
 async function getJson<T>(url: string): Promise<T> {

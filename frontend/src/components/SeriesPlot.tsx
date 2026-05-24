@@ -35,28 +35,35 @@ export default function SeriesPlot({ series }: Props) {
       {error && <div className="status status-error">{error}</div>}
       {!error && points === null && <div className="status">Loading…</div>}
       {!error && points && (
-        <Plot
-          data={[
-            {
-              type: 'scatter',
-              mode: 'markers',
-              x: points.ts.map((t) => new Date(t * 1000)),
-              y: points.value,
-              marker: { size: 5 },
-              name: series.key,
-            },
-          ]}
-          layout={{
-            autosize: true,
-            height: 280,
-            margin: { l: 50, r: 20, t: 10, b: 40 },
-            xaxis: { title: { text: 'timestamp' }, type: 'date' },
-            yaxis: { title: { text: 'value' } },
-          }}
-          config={{ displaylogo: false, responsive: true }}
-          style={{ width: '100%' }}
-          useResizeHandler
-        />
+        <div className="plot-wrapper">
+          <Plot
+            data={[
+              {
+                type: 'scatter',
+                mode: 'lines+markers',
+                x:
+                  points.x_axis === 'time'
+                    ? points.x.map((t) => new Date(t * 1000))
+                    : points.x,
+                y: points.y,
+                marker: { size: 5 },
+                name: series.key,
+              },
+            ]}
+            layout={{
+              autosize: true,
+              margin: { l: 50, r: 20, t: 10, b: 40 },
+              xaxis:
+                points.x_axis === 'time'
+                  ? { title: { text: 'timestamp' }, type: 'date' }
+                  : { title: { text: 'run_serial_num' }, type: 'linear' },
+              yaxis: { title: { text: 'value' } },
+            }}
+            config={{ displaylogo: false, responsive: true }}
+            style={{ width: '100%', height: '100%' }}
+            useResizeHandler
+          />
+        </div>
       )}
     </div>
   )

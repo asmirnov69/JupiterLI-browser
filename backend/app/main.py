@@ -1,3 +1,5 @@
+from typing import Literal
+
 from fastapi import FastAPI
 from pydantic import BaseModel
 
@@ -18,8 +20,9 @@ class Series(BaseModel):
 
 class SeriesPoints(BaseModel):
     series_id: str
-    ts: list[float]
-    value: list[float]
+    x_axis: Literal["time", "serial"]
+    x: list[float]
+    y: list[float]
 
 
 @app.get("/api/health")
@@ -48,9 +51,18 @@ def list_series(run_id: str) -> list[Series]:
 @app.get("/api/series/{series_id}/points", response_model=SeriesPoints)
 def series_points(series_id: str) -> SeriesPoints:
     result = get_client().query(
-        "SELECT timestamp, value FROM series WHERE series_id = %(series_id)s ORDER BY timestamp",
+        "SELECT timestamp, value, run_serial_num FROM series WHERE series_id = %(series_id)s",
         parameters={"series_id": series_id},
     )
-    ts = [row[0] for row in result.result_rows]
-    value = [row[1] for row in result.result_rows]
-    return SeriesPoints(series_id=series_id, ts=ts, value=value)
+    rows = result.result_rows
+    has_real_ts = any(row[0] != -1.0 for row in rows)
+    if has_real_ts:
+        rows = sorted(rows, key=lambda r: r[0])
+        x = [float(r[0]) for r in rows]
+        x_axis: Literal["time", "serial"] = "time"
+    else:
+        rows = sorted(rows, key=lambda r: r[2])
+        x = [float(r[2]) for r in rows]
+        x_axis = "serial"
+    y = [float(r[1]) for r in rows]
+    return SeriesPoints(series_id=series_id, x_axis=x_axis, x=x, y=y)
