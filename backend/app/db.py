@@ -1,19 +1,42 @@
-import clickhouse_connect
 import redis
-from clickhouse_connect.driver.client import Client
+import sqlite3, re
 
 from .config import settings
 
-
-def get_client() -> Client:
-    return clickhouse_connect.get_client(
-        host=settings.clickhouse_host,
-        port=settings.clickhouse_port,
-        database=settings.clickhouse_database,
-        username=settings.clickhouse_user,
-        password=settings.clickhouse_password,
+def ch_to_sqlite_sql(sql):
+    return re.sub(
+        r'%\(([^)]+)\)s',
+        r':\1',
+        sql,
     )
 
+class SQLiteQueryResult:
+    def __init__(self, rows, column_names):
+        self.result_rows = rows
+        self.column_names = tuple(column_names)
+        self.row_count = len(rows)
+        
+        self.result_columns = [
+            [row[i] for row in rows]
+            for i in range(len(column_names))
+        ] if rows else [[] for _ in column_names]
+
+class SQLiteClient:
+    def __init__(self, db_path):
+        self.conn = sqlite3.connect(db_path)
+        
+    def query(self, sql, parameters=None):
+        cur = self.conn.cursor()
+        new_sql = ch_to_sqlite_sql(sql)
+        cur.execute(new_sql, parameters or ())
+        
+        rows = cur.fetchall()
+        cols = [d[0] for d in cur.description]
+        return SQLiteQueryResult(rows, cols)
+    
+def get_client():
+    conn = SQLiteClient(settings.sqlite3_db_fn)
+    return conn
 
 def get_redis() -> redis.Redis:
     return redis.Redis(

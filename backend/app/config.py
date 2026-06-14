@@ -4,11 +4,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
-    clickhouse_host: str = "localhost"
-    clickhouse_port: int = 8123
-    clickhouse_database: str = "default"
-    clickhouse_user: str = "default"
-    clickhouse_password: str = ""
+    sqlite3_db_fn: str = "/sqlite3-data/data.db"
 
     redis_host: str = "localhost"
     redis_port: int = 6379

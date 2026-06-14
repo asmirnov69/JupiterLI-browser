@@ -30,6 +30,3 @@ Open the URL Vite prints. Vite proxies `/api/*` to FastAPI on `:8000`.
 
 The Vite dev server is intended for development on a trusted network; do not expose it on the open internet.
 
-## Configuration
-
-Copy `backend/.env.example` to `backend/.env` if ClickHouse is not on `localhost:8123` with the default user.
